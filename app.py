@@ -67,14 +67,20 @@ def init_database():
             """
             cursor.execute(create_table_query)
             
-            # Check if phone column exists and add it if missing (migration)
-            cursor.execute("SHOW COLUMNS FROM employees LIKE 'phone'")
-            phone_column_exists = cursor.fetchone()
+            # Check for missing columns and add them (migration)
+            cursor.execute("SHOW COLUMNS FROM employees")
+            existing_columns = [column[0] for column in cursor.fetchall()]
             
-            if not phone_column_exists:
-                logger.info("Phone column missing, adding it...")
-                cursor.execute("ALTER TABLE employees ADD COLUMN phone VARCHAR(20) NOT NULL DEFAULT ''")
-                logger.info("Phone column added successfully")
+            required_columns = {
+                'phone': "VARCHAR(20) NOT NULL DEFAULT ''",
+                'employment_type': "VARCHAR(20) NOT NULL DEFAULT 'Full-time'"
+            }
+            
+            for column_name, column_definition in required_columns.items():
+                if column_name not in existing_columns:
+                    logger.info(f"{column_name} column missing, adding it...")
+                    cursor.execute(f"ALTER TABLE employees ADD COLUMN {column_name} {column_definition}")
+                    logger.info(f"{column_name} column added successfully")
             
             connection.commit()
             logger.info("Database initialized successfully")
